@@ -34,7 +34,6 @@ export function TrackingStatusView({ parcel }: { parcel: Parcel }) {
   const movementSteps = [...parcel.statuses].sort((a, b) => a.date.localeCompare(b.date));
   const barWidth = movementSteps.length > 1 ? `${(Math.max(0, movementSteps.length - 1) / movementSteps.length) * 100}%` : "0%";
   const displayCurrency = parcel.currency || "GBP";
-  const latestNote = parcel.statuses[0]?.note || "";
 
   return (
     <main>
@@ -66,9 +65,9 @@ export function TrackingStatusView({ parcel }: { parcel: Parcel }) {
         </div>
       </section>
 
-      <section className="bg-[linear-gradient(180deg,#f6f8f6_0%,#ffffff_100%)] px-4 py-14 sm:px-6 lg:px-8">
+      <section className="bg-[linear-gradient(180deg,#f8fbff_0%,#ffffff_48%,#fff8f3_100%)] px-4 py-14 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
-          <div className="rounded-[20px] border border-slate-200 bg-white/95 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
+          <div className="rounded-[24px] border border-white/80 bg-white/95 p-6 shadow-[0_30px_100px_rgba(15,23,42,0.08)] backdrop-blur">
             <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Live movement status</p>
@@ -96,8 +95,8 @@ export function TrackingStatusView({ parcel }: { parcel: Parcel }) {
                       <div className={`mx-auto flex h-10 w-10 items-center justify-center rounded-full text-white shadow-sm ${tone.accent}`}>
                         {index === movementSteps.length - 1 ? <CheckCircle2 size={18} /> : <span className="text-xs font-black">{index + 1}</span>}
                       </div>
-                      <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                        <p className="text-sm font-black text-slate-950">{step.title}</p>
+                      <div className={`mt-4 rounded-2xl border p-4 shadow-sm ${index === movementSteps.length - 1 ? `${tone.border} bg-white` : "border-slate-200 bg-white/90"}`}>
+                        <p className={`text-sm font-black ${index === movementSteps.length - 1 ? "text-slate-950" : "text-slate-900"}`}>{step.title}</p>
                         <p className="mt-1 text-xs font-semibold text-slate-500">{step.location}</p>
                         <p className="mt-3 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
                           {new Date(step.date).toLocaleString("en-GB", {
@@ -115,19 +114,11 @@ export function TrackingStatusView({ parcel }: { parcel: Parcel }) {
               </div>
             </div>
 
-            <div className={`mt-6 rounded-2xl border p-5 ${tone.border} ${tone.soft}`}>
-              <p className="text-xs font-bold uppercase tracking-[0.16em]">Important update for receiver</p>
-              <p className="mt-2 text-base font-semibold">
-                Your parcel is currently at <span className="font-black">{parcel.currentStatus}</span>. Please check the latest shipment update below for the exact delivery note and any action you may need to take.
-              </p>
-              {latestNote ? <p className="mt-3 text-sm font-semibold">{latestNote}</p> : null}
-            </div>
-
             {tone.border !== "border-teal-700" ? (
               <div className={`mt-6 flex items-start gap-3 rounded-lg border p-4 ${tone.border} ${tone.soft}`}>
                 <AlertTriangle size={18} className="mt-0.5 shrink-0" />
                 <p className="text-sm font-semibold">
-                  Please check the newest update below for the latest delivery note on your shipment.
+                  Please check the newest shipment update below for the latest delivery note on your parcel.
                 </p>
               </div>
             ) : null}
@@ -136,77 +127,49 @@ export function TrackingStatusView({ parcel }: { parcel: Parcel }) {
       </section>
 
       <section className="px-4 py-6 sm:px-6 lg:px-8">
-        <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[1.05fr_.95fr]">
-          <div className="grid gap-6">
-            <div className="grid gap-5 md:grid-cols-2">
-              <DetailCard
-                title="Sender Details"
-                icon={<UserRound size={22} className="text-teal-700" />}
-                lines={[
-                  parcel.sender.name,
-                  parcel.sender.email,
-                  parcel.sender.phone || "",
-                  parcel.sender.address,
-                  parcel.sender.country,
-                  parcel.sender.dispatchBranch ? `Dispatch branch: ${parcel.sender.dispatchBranch}` : "",
-                ]}
-              />
-              <DetailCard
-                title="Receiver Details"
-                icon={<Package size={22} className="text-orange-600" />}
-                lines={[
-                  parcel.receiver.name,
-                  parcel.receiver.email,
-                  parcel.receiver.phone || "",
-                  parcel.receiver.address,
-                  parcel.receiver.country,
-                ]}
-              />
+        <div className="mx-auto grid max-w-7xl gap-6">
+          <div className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <h2 className="text-2xl font-black text-slate-950">Shipment Updates</h2>
+              <p className="text-sm font-bold uppercase tracking-[0.16em] text-slate-500">Newest to oldest</p>
             </div>
+            <div className="mt-6 grid gap-4">
+              {parcel.statuses.map((status, index) => {
+                const severityTone =
+                  status.severity === "warning"
+                    ? "border-amber-300 bg-amber-50"
+                    : status.severity === "issue"
+                      ? "border-red-300 bg-red-50"
+                      : status.severity === "delivered"
+                        ? "border-emerald-300 bg-emerald-50"
+                        : "border-slate-200 bg-white";
 
-            <div className="rounded-[20px] border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <h2 className="text-2xl font-black text-slate-950">Shipment Updates</h2>
-                <p className="text-sm font-bold uppercase tracking-[0.16em] text-slate-500">Newest to oldest</p>
-              </div>
-              <div className="mt-6 grid gap-4">
-                {parcel.statuses.map((status, index) => {
-                  const severityTone =
-                    status.severity === "warning"
-                      ? "border-amber-300 bg-amber-50"
-                      : status.severity === "issue"
-                        ? "border-red-300 bg-red-50"
-                        : status.severity === "delivered"
-                          ? "border-emerald-300 bg-emerald-50"
-                          : "border-slate-200 bg-white";
-
-                  return (
-                    <article key={status.id} className={`rounded-xl border p-5 shadow-sm ${severityTone}`}>
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                        <div>
-                          <p className="text-lg font-black text-slate-950">{status.title}</p>
-                          <p className="mt-1 text-sm font-semibold text-slate-600">{status.location}</p>
-                        </div>
-                        <div className="rounded-full bg-slate-950 px-4 py-2 text-sm font-black text-white">
-                          {new Date(status.date).toLocaleString("en-GB", {
-                            day: "2-digit",
-                            month: "short",
-                            year: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </div>
+                return (
+                  <article key={status.id} className={`rounded-2xl border p-5 shadow-sm ${severityTone}`}>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <p className="text-xl font-black text-slate-950">{status.title}</p>
+                        <p className="mt-1 text-sm font-semibold text-slate-600">{status.location}</p>
                       </div>
-                      <p className="mt-4 text-base leading-7 text-slate-700">{[status.note, status.internalNote].filter(Boolean).join(" ")}</p>
-                      {index === 0 ? <p className="mt-3 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Latest update</p> : null}
-                    </article>
-                  );
-                })}
-              </div>
+                      <div className="rounded-full bg-slate-950 px-4 py-2 text-sm font-black text-white">
+                        {new Date(status.date).toLocaleString("en-GB", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </div>
+                    </div>
+                    <p className="mt-4 text-base leading-7 text-slate-700">{[status.note, status.internalNote].filter(Boolean).join(" ")}</p>
+                    {index === 0 ? <p className="mt-3 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Latest update</p> : null}
+                  </article>
+                );
+              })}
             </div>
           </div>
 
-          <div className="grid gap-6">
+          <div className="grid gap-6 lg:grid-cols-[1.05fr_.95fr]">
             <DetailCard
               title="Shipment Summary"
               icon={<MapPinned size={22} className="text-teal-700" />}
@@ -215,28 +178,53 @@ export function TrackingStatusView({ parcel }: { parcel: Parcel }) {
                 `Destination: ${parcel.destination}`,
                 `Current location: ${parcel.currentLocation}`,
                 `Parcel type: ${parcel.parcelType}`,
-                `Currency: ${displayCurrency}`,
-                parcel.notes ? `Shipment notes: ${parcel.notes}` : "",
                 parcel.weightKg ? `Weight: ${parcel.weightKg} kg` : "",
                 parcel.declaredValue ? `Declared value: ${displayCurrency} ${parcel.declaredValue}` : "",
                 parcel.insuranceValue ? `Insurance value: ${displayCurrency} ${parcel.insuranceValue}` : "",
               ]}
             />
-            <div className="rounded-[20px] border border-slate-200 bg-white p-6 shadow-sm">
-              <h3 className="text-xl font-black text-slate-950">Need courier support?</h3>
-              <p className="mt-3 leading-7 text-slate-600">
-                Use the shipment tracking number in your message so our operations team can check the latest movement record quickly.
-              </p>
-              <div className="mt-5 grid gap-3 text-sm font-semibold text-slate-700">
-                <a href="mailto:support@parcelpulsecargo.com" className="inline-flex items-center gap-3 rounded-lg border border-slate-200 px-4 py-3 hover:bg-slate-50">
-                  <Mail size={18} className="text-orange-600" /> support@parcelpulsecargo.com
-                </a>
-                <a href="tel:+447828243421" className="inline-flex items-center gap-3 rounded-lg border border-slate-200 px-4 py-3 hover:bg-slate-50">
-                  <Phone size={18} className="text-teal-700" /> +44 7828 243421
-                </a>
-                <p className="inline-flex items-center gap-3 rounded-lg border border-slate-200 px-4 py-3">
-                  <CalendarDays size={18} className="text-slate-700" /> Created on {new Date(parcel.createdAt).toLocaleDateString("en-GB")}
+            <div className="grid gap-6">
+              <div className="grid gap-5 md:grid-cols-2">
+                <DetailCard
+                  title="Sender Details"
+                  icon={<UserRound size={22} className="text-teal-700" />}
+                  lines={[
+                    parcel.sender.name,
+                    parcel.sender.email,
+                    parcel.sender.phone || "",
+                    parcel.sender.address,
+                    parcel.sender.country,
+                    parcel.sender.dispatchBranch ? `Dispatch branch: ${parcel.sender.dispatchBranch}` : "",
+                  ]}
+                />
+                <DetailCard
+                  title="Receiver Details"
+                  icon={<Package size={22} className="text-orange-600" />}
+                  lines={[
+                    parcel.receiver.name,
+                    parcel.receiver.email,
+                    parcel.receiver.phone || "",
+                    parcel.receiver.address,
+                    parcel.receiver.country,
+                  ]}
+                />
+              </div>
+              <div className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-[0_20px_50px_rgba(15,23,42,0.08)]">
+                <h3 className="text-xl font-black text-slate-950">Need courier support?</h3>
+                <p className="mt-3 leading-7 text-slate-600">
+                  Use the shipment tracking number in your message so our operations team can check the latest movement record quickly.
                 </p>
+                <div className="mt-5 grid gap-3 text-sm font-semibold text-slate-700">
+                  <a href="mailto:support@parcelpulsecargo.com" className="inline-flex items-center gap-3 rounded-lg border border-slate-200 px-4 py-3 hover:bg-slate-50">
+                    <Mail size={18} className="text-orange-600" /> support@parcelpulsecargo.com
+                  </a>
+                  <a href="tel:+447828243421" className="inline-flex items-center gap-3 rounded-lg border border-slate-200 px-4 py-3 hover:bg-slate-50">
+                    <Phone size={18} className="text-teal-700" /> +44 7828 243421
+                  </a>
+                  <p className="inline-flex items-center gap-3 rounded-lg border border-slate-200 px-4 py-3">
+                    <CalendarDays size={18} className="text-slate-700" /> Created on {new Date(parcel.createdAt).toLocaleDateString("en-GB")}
+                  </p>
+                </div>
               </div>
             </div>
           </div>

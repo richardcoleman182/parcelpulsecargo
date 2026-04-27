@@ -112,7 +112,7 @@ export async function sendParcelEmail(parcel: Parcel, subjectPrefix = "Shipment 
   const pdf = await createParcelPdf(parcel);
   const recipients = [parcel.sender.email, parcel.receiver.email].filter(Boolean);
 
-  return sendEmail({
+  const payload = {
     to: recipients,
     subject: `${subjectPrefix}: ${parcel.trackingNumber}`,
     text: `Your Parcel Pulse Cargo tracking number is ${parcel.trackingNumber}. Current status: ${parcel.currentStatus} at ${parcel.currentLocation}.`,
@@ -131,7 +131,42 @@ export async function sendParcelEmail(parcel: Parcel, subjectPrefix = "Shipment 
         content: pdf.toString("base64"),
       },
     ],
-  });
+  };
+
+  const result = await sendEmail(payload).catch(() => ({
+    attempted: recipients,
+    delivered: [],
+    failed: recipients.map((recipient) => ({ to: recipient, error: "Attachment delivery failed" })),
+    usedFallback: false,
+  }));
+
+  if (!result.failed.length) {
+    return result;
+  }
+
+  const retryRecipients = result.failed.map((entry) => entry.to);
+  const retryResult = await sendEmail({
+    ...payload,
+    to: retryRecipients,
+    attachments: [],
+    text: `${payload.text} A PDF summary is temporarily unavailable, but your shipment is active and can be tracked online.`,
+    html: `${payload.html}<p>A PDF summary is temporarily unavailable right now, but your shipment is active and can be tracked online.</p>`,
+  }).catch((error) => ({
+    attempted: retryRecipients,
+    delivered: [],
+    failed: retryRecipients.map((recipient) => ({
+      to: recipient,
+      error: error instanceof Error ? error.message : "Retry without attachment failed",
+    })),
+    usedFallback: result.usedFallback,
+  }));
+
+  return {
+    attempted: result.attempted,
+    delivered: [...new Set([...result.delivered, ...retryResult.delivered])],
+    failed: retryResult.failed,
+    usedFallback: result.usedFallback || retryResult.usedFallback,
+  };
 }
 
 export async function sendContactEmail(input: { name: string; email: string; phone?: string; message: string }) {

@@ -306,6 +306,57 @@ export async function addParcelStatus(trackingNumber: string, status: Omit<Parce
   return findParcel(normalized);
 }
 
+export async function deleteParcelStatus(trackingNumber: string, statusId: string) {
+  const normalized = normalizeTrackingNumber(trackingNumber);
+
+  if (!isSupabaseEnabled()) {
+    const parcel = demoParcels.get(normalized);
+    if (!parcel) return null;
+    const statuses = parcel.statuses.filter((status) => status.id !== statusId);
+    const latestStatus = statuses[0];
+    const updated: Parcel = {
+      ...parcel,
+      statuses,
+      currentStatus: latestStatus?.title || "Shipment created",
+      currentLocation: latestStatus?.location || parcel.origin,
+      updatedAt: now(),
+    };
+    demoParcels.set(normalized, updated);
+    return updated;
+  }
+
+  await supabaseRequest<null>(
+    `shipment_updates?id=eq.${encodeURIComponent(statusId)}&tracking_number=eq.${encodeURIComponent(normalized)}`,
+    { method: "DELETE" },
+    { allowEmpty: true },
+  );
+
+  const remaining =
+    (await supabaseRequest<ShipmentUpdateRow[]>(
+      `shipment_updates?tracking_number=eq.${encodeURIComponent(normalized)}&order=date.desc`,
+    )) || [];
+
+  const latestStatus = remaining[0];
+
+  await supabaseRequest<ShipmentRow[]>(
+    `shipments?tracking_number=eq.${encodeURIComponent(normalized)}`,
+    {
+      method: "PATCH",
+      headers: {
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify({
+        current_status: latestStatus?.title || "Shipment created",
+        current_location: latestStatus?.location || "At origin warehouse",
+        updated_at: now(),
+      }),
+    },
+    { allowEmpty: true },
+  );
+
+  return findParcel(normalized);
+}
+
 export async function updateParcel(trackingNumber: string, input: Partial<Omit<Parcel, "trackingNumber" | "statuses" | "updatedAt">>) {
   const normalized = normalizeTrackingNumber(trackingNumber);
   const updates = {

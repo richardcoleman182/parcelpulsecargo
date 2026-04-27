@@ -52,8 +52,8 @@ async function postEmail(payload: EmailPayload, from: string) {
 async function sendEmail(payload: EmailPayload) {
   const configuredFrom = process.env.MAIL_FROM || "Parcel Pulse Cargo <support@parcelpulsecargo.com>";
   const fallbackFrom = "Parcel Pulse Cargo <onboarding@resend.dev>";
-  const primaryFrom = configuredFrom.includes("resend.dev") ? configuredFrom : fallbackFrom;
-  const secondaryFrom = configuredFrom.includes("resend.dev") ? undefined : configuredFrom;
+  const primaryFrom = configuredFrom;
+  const secondaryFrom = configuredFrom.includes("resend.dev") ? undefined : fallbackFrom;
   const recipients = [...new Set(payload.to.filter(Boolean))];
   const result: EmailDeliveryResult = {
     attempted: recipients,

@@ -137,6 +137,7 @@ export function AdminDashboard() {
   const [message, setMessage] = useState("");
   const [createdModal, setCreatedModal] = useState<{ sender: string; receiver: string; trackingNumber: string } | null>(null);
   const [updatedModal, setUpdatedModal] = useState<{ trackingNumber: string; status: string; location: string } | null>(null);
+  const [copiedTrackingNumber, setCopiedTrackingNumber] = useState<string | null>(null);
 
   const selectedNumber = selected?.trackingNumber;
 
@@ -343,6 +344,28 @@ export function AdminDashboard() {
     window.URL.revokeObjectURL(url);
   }
 
+  async function deleteUpdate(statusId: string) {
+    if (!selectedNumber) return;
+    if (!window.confirm("Delete this shipment update?")) {
+      return;
+    }
+
+    const response = await fetch(`/api/admin/parcels/${selectedNumber}/status/${statusId}`, {
+      method: "DELETE",
+      headers: adminHeaders(),
+    });
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      setMessage(data?.error || "Could not delete the shipment update.");
+      return;
+    }
+
+    setSelected(data.parcel);
+    setMessage("Shipment update deleted successfully.");
+    await load();
+  }
+
   return (
     <main className="min-h-screen bg-slate-100">
       <header className="border-b border-slate-200 bg-white">
@@ -515,7 +538,16 @@ export function AdminDashboard() {
               <div className="mt-5 grid gap-3">
                 {selected.statuses.map((status) => (
                   <div key={status.id} className="border-l-2 border-teal-700 pl-3">
-                    <p className="text-sm font-bold">{status.title}</p>
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="text-sm font-bold">{status.title}</p>
+                      <button
+                        type="button"
+                        onClick={() => void deleteUpdate(status.id)}
+                        className="inline-flex h-8 items-center justify-center rounded-md border border-red-200 px-2 text-xs font-bold text-red-700 hover:bg-red-50"
+                      >
+                        Delete update
+                      </button>
+                    </div>
                     <p className="text-xs text-slate-500">{new Date(status.date).toLocaleString()} · {status.location}</p>
                     <p className="text-sm text-slate-600">{status.note}</p>
                   </div>
@@ -539,15 +571,25 @@ export function AdminDashboard() {
                 <p className="font-mono text-lg font-black text-slate-950">{createdModal.trackingNumber}</p>
                 <button
                   type="button"
-                  onClick={() => void navigator.clipboard.writeText(createdModal.trackingNumber)}
+                  onClick={() => {
+                    void navigator.clipboard.writeText(createdModal.trackingNumber);
+                    setCopiedTrackingNumber(createdModal.trackingNumber);
+                  }}
                   className="rounded-md border border-slate-300 px-3 py-2 text-sm font-bold text-slate-700"
                 >
-                  Copy
+                  {copiedTrackingNumber === createdModal.trackingNumber ? "Copied" : "Copy"}
                 </button>
               </div>
             </div>
             <div className="mt-6 flex justify-end">
-              <button type="button" onClick={() => setCreatedModal(null)} className="inline-flex h-11 items-center justify-center rounded-md bg-teal-700 px-5 font-bold text-white">
+              <button
+                type="button"
+                onClick={() => {
+                  setCreatedModal(null);
+                  setCopiedTrackingNumber(null);
+                }}
+                className="inline-flex h-11 items-center justify-center rounded-md bg-teal-700 px-5 font-bold text-white"
+              >
                 OK
               </button>
             </div>

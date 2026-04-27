@@ -1,36 +1,44 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Parcel Pulse Cargo
 
-## Getting Started
+Professional Next.js courier website for parcelpulsecargo.com.
 
-First, run the development server:
+## Features
+
+- Public home page with hero cargo image and tracking lookup
+- About, Services, Contact, Tracking, FAQ, Privacy, Terms, and Disclaimer pages
+- Admin login under `/lex/auth`
+- Admin dashboard for creating parcels and generating tracking numbers
+- Parcel status updates for locations, airport/customs/immigration issues, delays, and delivery
+- PDF shipment record generation
+- Resend email notifications to sender and receiver with PDF attachments
+- Supabase-backed shipment, update, and contact data
+
+## Local Setup
 
 ```bash
+npm install
+cp .env.example .env.local
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Default local admin email is `ops@parcelpulsecargo.com` and password is `ChangeMeParcelPulse!`. Change `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and `AUTH_SECRET` before production.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Supabase Setup
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Run the SQL in [schema.sql](/Users/stanlex/Documents/parcelpulsecargo/supabase/schema.sql) inside your Supabase SQL editor before using the production data layer.
 
-## Learn More
+The app uses:
 
-To learn more about Next.js, take a look at the following resources:
+- `SUPABASE_SERVICE_ROLE_KEY` on the server for shipment and contact CRUD
+- `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` for client-ready project metadata
+- `RESEND_API_KEY` for shipment and contact emails
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Email Notes
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Cloudflare email routing forwards inbound mail to Gmail. Outbound app email is now sent through Resend's email API.
 
-## Deploy on Vercel
+If you want Supabase Auth to send its own emails through Resend, configure that in Supabase Dashboard > Authentication > SMTP Settings using Resend SMTP.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Deployment
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Deploy to Vercel, add the environment variables, then point `parcelpulsecargo.com` from Cloudflare to Vercel using Vercel's domain instructions.

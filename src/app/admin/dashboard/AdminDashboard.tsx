@@ -288,6 +288,29 @@ export function AdminDashboard() {
     window.location.href = "/lex/auth";
   }
 
+  async function downloadPdf(trackingNumber: string) {
+    setMessage("");
+    const response = await fetch(`/api/admin/parcels/${trackingNumber}/pdf`, {
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => null);
+      setMessage(data?.error || "Could not download the shipment PDF.");
+      return;
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${trackingNumber}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  }
+
   return (
     <main className="min-h-screen bg-slate-100">
       <header className="border-b border-slate-200 bg-white">
@@ -424,9 +447,9 @@ export function AdminDashboard() {
                   <Link href={`/admin/parcels/${selected.trackingNumber}/edit`} className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-teal-700 px-4 text-sm font-bold text-white">
                     <Edit3 size={16} /> Open full editor
                   </Link>
-                  <a href={`/api/admin/parcels/${selected.trackingNumber}/pdf`} className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-orange-600 px-4 text-sm font-bold text-white">
+                  <button onClick={() => void downloadPdf(selected.trackingNumber)} type="button" className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-orange-600 px-4 text-sm font-bold text-white">
                     <Download size={16} /> Download PDF
-                  </a>
+                  </button>
                   <button onClick={load} className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-slate-300 px-4 text-sm font-bold text-slate-700">
                     <RefreshCw size={16} /> Reload shipment
                   </button>

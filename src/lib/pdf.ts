@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import path from "node:path";
 import PDFDocument from "pdfkit";
 import type { Parcel } from "@/types/parcel";
@@ -6,7 +7,11 @@ export async function createParcelPdf(parcel: Parcel) {
   return new Promise<Buffer>((resolve, reject) => {
     const chunks: Buffer[] = [];
     const doc = new PDFDocument({ margin: 48, size: "A4" });
-    const logoPath = path.join(process.cwd(), "logo.jpg");
+    const logoCandidates = [
+      path.join(process.cwd(), "public", "logo.jpg"),
+      path.join(process.cwd(), "logo.jpg"),
+    ];
+    const logoPath = logoCandidates.find((candidate) => fs.existsSync(candidate));
     const currency = parcel.currency || "GBP";
 
     doc.on("data", (chunk: Buffer) => chunks.push(chunk));
@@ -14,7 +19,9 @@ export async function createParcelPdf(parcel: Parcel) {
     doc.on("error", reject);
 
     doc.roundedRect(36, 36, 523, 110, 18).fillAndStroke("#f2f8f7", "#dbe3ea");
-    doc.image(logoPath, 54, 50, { fit: [58, 58] });
+    if (logoPath) {
+      doc.image(logoPath, 54, 50, { fit: [58, 58] });
+    }
     doc.fillColor("#0f766e").fontSize(24).font("Helvetica-Bold").text("Parcel Pulse Cargo", 126, 54);
     doc.fillColor("#475569").fontSize(11).font("Helvetica").text("International courier and cargo movement record", 126, 82);
     doc.text("support@parcelpulsecargo.com | +44 7828 243421", 126, 98);

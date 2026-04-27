@@ -6,26 +6,16 @@ import { Loader2, Send } from "lucide-react";
 function createChallenge() {
   const left = Math.floor(Math.random() * 10) + 1;
   const right = Math.floor(Math.random() * 10) + 1;
-  const operator = Math.random() > 0.5 ? "x" : "-";
-
-  if (operator === "-") {
-    const larger = Math.max(left, right);
-    const smaller = Math.min(left, right);
-    return {
-      label: `${larger} - ${smaller}`,
-      answer: larger - smaller,
-    };
-  }
 
   return {
-    label: `${left} x ${right}`,
-    answer: left * right,
+    label: `${left} + ${right}`,
+    answer: left + right,
   };
 }
 
 export function ContactForm() {
   const [state, setState] = useState<"idle" | "loading" | "sent" | "error">("idle");
-  const [challenge, setChallenge] = useState({ label: "1 x 1", answer: 1 });
+  const [challenge, setChallenge] = useState({ label: "1 + 1", answer: 2 });
   const [challengeAnswer, setChallengeAnswer] = useState("");
 
   const isChallengeCorrect = Number(challengeAnswer) === challenge.answer;
@@ -83,7 +73,7 @@ export function ContactForm() {
         {state === "loading" ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
         Send message
       </button>
-      {state === "sent" ? <p className="text-sm font-semibold text-teal-700">Message received. Our team will reply as soon as possible.</p> : null}
+      {state === "sent" ? <p className="text-sm font-semibold text-teal-700">Message received successfully. Your enquiry has been sent to Parcel Pulse Cargo support and our team will reply to you as soon as possible.</p> : null}
       {state === "error" ? (
         <p className="text-sm font-semibold text-red-700">
           Something went wrong. Please email{" "}

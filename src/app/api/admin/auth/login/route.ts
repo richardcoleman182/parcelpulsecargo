@@ -8,6 +8,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid admin credentials." }, { status: 401 });
   }
 
-  await setAdminCookie(await createAdminToken());
-  return NextResponse.json({ ok: true });
+  const token = await createAdminToken();
+  await setAdminCookie(token);
+  return NextResponse.json({ ok: true, token });
 }

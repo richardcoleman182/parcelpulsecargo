@@ -4,7 +4,7 @@ import { findParcel } from "@/lib/parcels";
 import { createParcelPdf } from "@/lib/pdf";
 
 export async function GET(_: Request, { params }: { params: Promise<{ trackingNumber: string }> }) {
-  if (!(await isAdminRequest())) {
+  if (!(await isAdminRequest(_))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

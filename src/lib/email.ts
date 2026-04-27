@@ -52,6 +52,8 @@ async function postEmail(payload: EmailPayload, from: string) {
 async function sendEmail(payload: EmailPayload) {
   const configuredFrom = process.env.MAIL_FROM || "Parcel Pulse Cargo <support@parcelpulsecargo.com>";
   const fallbackFrom = "Parcel Pulse Cargo <onboarding@resend.dev>";
+  const primaryFrom = configuredFrom.includes("resend.dev") ? configuredFrom : fallbackFrom;
+  const secondaryFrom = configuredFrom.includes("resend.dev") ? undefined : configuredFrom;
   const recipients = [...new Set(payload.to.filter(Boolean))];
   const result: EmailDeliveryResult = {
     attempted: recipients,
@@ -64,20 +66,26 @@ async function sendEmail(payload: EmailPayload) {
     const singlePayload = { ...payload, to: [recipient] };
 
     try {
-      await postEmail(singlePayload, configuredFrom);
+      await postEmail(
+        {
+          ...singlePayload,
+          replyTo: payload.replyTo || "support@parcelpulsecargo.com",
+        },
+        primaryFrom,
+      );
       result.delivered.push(recipient);
       continue;
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown email error";
 
-      if (!configuredFrom.includes("resend.dev")) {
+      if (secondaryFrom) {
         try {
           await postEmail(
             {
               ...singlePayload,
               replyTo: payload.replyTo || "support@parcelpulsecargo.com",
             },
-            fallbackFrom,
+            secondaryFrom,
           );
           result.delivered.push(recipient);
           result.usedFallback = true;

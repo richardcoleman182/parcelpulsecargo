@@ -16,10 +16,35 @@ export const metadata: Metadata = {
   title: "Parcel Pulse Cargo | International Courier and Cargo Delivery",
   description:
     "UK based international courier company moving parcels, documents, commercial cargo, and specialist shipments worldwide.",
+  metadataBase: new URL("https://parcelpulsecargo.com"),
   icons: {
     icon: "/favicon.webp",
     shortcut: "/favicon.webp",
     apple: "/logo.webp",
+  },
+  openGraph: {
+    title: "Parcel Pulse Cargo",
+    description:
+      "UK based international courier company moving parcels, documents, commercial cargo, and specialist shipments worldwide.",
+    url: "https://parcelpulsecargo.com",
+    siteName: "Parcel Pulse Cargo",
+    images: [
+      {
+        url: "/logo.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Parcel Pulse Cargo",
+      },
+    ],
+    locale: "en_GB",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Parcel Pulse Cargo",
+    description:
+      "UK based international courier company moving parcels, documents, commercial cargo, and specialist shipments worldwide.",
+    images: ["/logo.jpg"],
   },
 };
 

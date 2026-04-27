@@ -29,6 +29,11 @@ export function LexAuthForm() {
       return;
     }
 
+    const data = await response.json().catch(() => null);
+    if (data?.token) {
+      window.localStorage.setItem("ppc_admin_token", data.token);
+    }
+
     router.push("/admin/dashboard");
     router.refresh();
   }

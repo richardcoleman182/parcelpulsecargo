@@ -4,7 +4,7 @@ import { deleteParcel, findParcel, updateParcel } from "@/lib/parcels";
 import { parcelSchema } from "@/lib/parcelValidation";
 
 export async function GET(_: Request, { params }: { params: Promise<{ trackingNumber: string }> }) {
-  if (!(await isAdminRequest())) {
+  if (!(await isAdminRequest(_))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -14,7 +14,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ trackingNu
 }
 
 export async function DELETE(_: Request, { params }: { params: Promise<{ trackingNumber: string }> }) {
-  if (!(await isAdminRequest())) {
+  if (!(await isAdminRequest(_))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -24,7 +24,7 @@ export async function DELETE(_: Request, { params }: { params: Promise<{ trackin
 }
 
 export async function PUT(request: Request, { params }: { params: Promise<{ trackingNumber: string }> }) {
-  if (!(await isAdminRequest())) {
+  if (!(await isAdminRequest(request))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

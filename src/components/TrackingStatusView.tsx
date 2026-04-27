@@ -34,6 +34,7 @@ export function TrackingStatusView({ parcel }: { parcel: Parcel }) {
   const movementSteps = [...parcel.statuses].sort((a, b) => a.date.localeCompare(b.date));
   const barWidth = movementSteps.length > 1 ? `${(Math.max(0, movementSteps.length - 1) / movementSteps.length) * 100}%` : "0%";
   const displayCurrency = parcel.currency || "GBP";
+  const latestNote = parcel.statuses[0]?.note || "";
 
   return (
     <main>
@@ -71,7 +72,7 @@ export function TrackingStatusView({ parcel }: { parcel: Parcel }) {
             <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Live movement status</p>
-                <h2 className="mt-2 text-2xl font-black text-slate-950">{parcel.currentStatus}</h2>
+                <h2 className="mt-2 text-3xl font-black text-slate-950 sm:text-4xl">{parcel.currentStatus}</h2>
                 <p className="mt-2 text-sm text-slate-600">Current location: {parcel.currentLocation}</p>
               </div>
               <div className="grid gap-2 text-sm text-slate-600">
@@ -114,11 +115,19 @@ export function TrackingStatusView({ parcel }: { parcel: Parcel }) {
               </div>
             </div>
 
+            <div className={`mt-6 rounded-2xl border p-5 ${tone.border} ${tone.soft}`}>
+              <p className="text-xs font-bold uppercase tracking-[0.16em]">Important update for receiver</p>
+              <p className="mt-2 text-base font-semibold">
+                Your parcel is currently at <span className="font-black">{parcel.currentStatus}</span>. Please check the latest shipment update below for the exact delivery note and any action you may need to take.
+              </p>
+              {latestNote ? <p className="mt-3 text-sm font-semibold">{latestNote}</p> : null}
+            </div>
+
             {tone.border !== "border-teal-700" ? (
               <div className={`mt-6 flex items-start gap-3 rounded-lg border p-4 ${tone.border} ${tone.soft}`}>
                 <AlertTriangle size={18} className="mt-0.5 shrink-0" />
                 <p className="text-sm font-semibold">
-                  Please review the latest movement card below for the newest operational note on this shipment.
+                  Please check the newest update below for the latest delivery note on your shipment.
                 </p>
               </div>
             ) : null}
@@ -188,13 +197,7 @@ export function TrackingStatusView({ parcel }: { parcel: Parcel }) {
                           })}
                         </div>
                       </div>
-                      <p className="mt-4 text-base leading-7 text-slate-700">{status.note}</p>
-                      {status.internalNote ? (
-                        <div className="mt-4 rounded-xl border border-teal-200 bg-teal-50 px-4 py-3">
-                          <p className="text-xs font-bold uppercase tracking-[0.16em] text-teal-700">Operations note</p>
-                          <p className="mt-1 text-sm font-semibold text-slate-700">{status.internalNote}</p>
-                        </div>
-                      ) : null}
+                      <p className="mt-4 text-base leading-7 text-slate-700">{[status.note, status.internalNote].filter(Boolean).join(" ")}</p>
                       {index === 0 ? <p className="mt-3 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Latest update</p> : null}
                     </article>
                   );

@@ -26,7 +26,15 @@ export async function verifyAdminToken(token?: string) {
   }
 }
 
-export async function isAdminRequest() {
+export async function isAdminRequest(request?: Request) {
+  const headerToken =
+    request?.headers.get("x-admin-token") ||
+    request?.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+
+  if (await verifyAdminToken(headerToken || undefined)) {
+    return true;
+  }
+
   const cookieStore = await cookies();
   return verifyAdminToken(cookieStore.get(cookieName)?.value);
 }

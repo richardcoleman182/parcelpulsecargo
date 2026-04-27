@@ -13,6 +13,8 @@ import {
 import { formatDateTimeLocal, toIsoOrUndefined } from "@/lib/datetime";
 import type { Parcel } from "@/types/parcel";
 
+const adminTokenKey = "ppc_admin_token";
+
 type EditForm = {
   senderName: string;
   senderEmail: string;
@@ -186,11 +188,18 @@ export function EditCargoForm({ trackingNumber }: { trackingNumber: string }) {
     setForm((current) => (current ? { ...current, [key]: value } : current));
   }
 
+  function adminHeaders(): Record<string, string> {
+    const token = typeof window !== "undefined" ? window.localStorage.getItem(adminTokenKey) : null;
+    return token ? { "x-admin-token": token } : {};
+  }
+
   useEffect(() => {
     let mounted = true;
 
     async function load() {
-      const response = await fetch(`/api/admin/parcels/${trackingNumber}`);
+      const response = await fetch(`/api/admin/parcels/${trackingNumber}`, {
+        headers: adminHeaders(),
+      });
       const data = await response.json();
 
       if (mounted && data.parcel) {
@@ -214,7 +223,7 @@ export function EditCargoForm({ trackingNumber }: { trackingNumber: string }) {
 
     const response = await fetch(`/api/admin/parcels/${trackingNumber}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...adminHeaders() },
       body: JSON.stringify(toBody(form)),
     });
 

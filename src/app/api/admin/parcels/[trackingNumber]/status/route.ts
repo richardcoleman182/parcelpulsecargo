@@ -5,7 +5,7 @@ import { addParcelStatus } from "@/lib/parcels";
 import { statusSchema } from "@/lib/parcelValidation";
 
 export async function POST(request: Request, { params }: { params: Promise<{ trackingNumber: string }> }) {
-  if (!(await isAdminRequest())) {
+  if (!(await isAdminRequest(request))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

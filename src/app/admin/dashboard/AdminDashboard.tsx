@@ -43,6 +43,7 @@ const emptyParcel = {
 };
 
 type ParcelFormState = typeof emptyParcel;
+const adminTokenKey = "ppc_admin_token";
 
 const emptyStatusForm = {
   title: "Received",
@@ -134,6 +135,7 @@ export function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [createdModal, setCreatedModal] = useState<{ sender: string; receiver: string; trackingNumber: string } | null>(null);
 
   const selectedNumber = selected?.trackingNumber;
 
@@ -150,8 +152,15 @@ export function AdminDashboard() {
     setSelected((current) => nextParcels.find((parcel) => parcel.trackingNumber === current?.trackingNumber) || nextParcels[0] || null);
   }
 
+  function adminHeaders(): Record<string, string> {
+    const token = typeof window !== "undefined" ? window.localStorage.getItem(adminTokenKey) : null;
+    return token ? { "x-admin-token": token } : {};
+  }
+
   async function load() {
-    const response = await fetch("/api/admin/parcels");
+    const response = await fetch("/api/admin/parcels", {
+      headers: adminHeaders(),
+    });
     const data = await response.json();
     applyParcelData(data.parcels || []);
     setLoading(false);
@@ -161,7 +170,9 @@ export function AdminDashboard() {
     let mounted = true;
 
     async function initialLoad() {
-      const response = await fetch("/api/admin/parcels");
+      const response = await fetch("/api/admin/parcels", {
+        headers: adminHeaders(),
+      });
       const data = await response.json();
 
       if (mounted) {
@@ -231,7 +242,7 @@ export function AdminDashboard() {
 
     const response = await fetch("/api/admin/parcels", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...adminHeaders() },
       body: JSON.stringify(body),
     });
 
@@ -246,7 +257,13 @@ export function AdminDashboard() {
     setParcelForm(emptyParcel);
     const delivered = data.notification?.delivered?.length || 0;
     const failed = data.notification?.failed?.length || 0;
-    setMessage(`Created ${data.parcel.trackingNumber}. Notifications sent to ${delivered} recipient${delivered === 1 ? "" : "s"}${failed ? `, with ${failed} failed delivery${failed === 1 ? "" : "ies"}.` : "."}`);
+    const failureReason = data.notification?.failed?.[0]?.error ? ` Delivery issue: ${data.notification.failed[0].error}` : "";
+    setMessage(`Shipment created. Notifications sent to ${delivered} recipient${delivered === 1 ? "" : "s"}${failed ? `, with ${failed} failed delivery${failed === 1 ? "" : "ies"}.` : "."}${failureReason}`);
+    setCreatedModal({
+      sender: data.parcel.sender.name,
+      receiver: data.parcel.receiver.name,
+      trackingNumber: data.parcel.trackingNumber,
+    });
     await load();
     setSelected(data.parcel);
   }
@@ -258,8 +275,8 @@ export function AdminDashboard() {
     setSaving(true);
     const response = await fetch(`/api/admin/parcels/${selectedNumber}/status`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...statusForm, date: toIsoOrUndefined(statusForm.date) }),
+      headers: { "Content-Type": "application/json", ...adminHeaders() },
+      body: JSON.stringify({ title: statusForm.title, location: statusForm.location, note: statusForm.note, date: toIsoOrUndefined(statusForm.date), severity: statusForm.severity }),
     });
     const data = await response.json();
     setSaving(false);
@@ -273,18 +290,26 @@ export function AdminDashboard() {
     setStatusForm(emptyStatusForm);
     const delivered = data.notification?.delivered?.length || 0;
     const failed = data.notification?.failed?.length || 0;
-    setMessage(`Updated ${selectedNumber}. Notifications sent to ${delivered} recipient${delivered === 1 ? "" : "s"}${failed ? `, with ${failed} failed delivery${failed === 1 ? "" : "ies"}.` : "."}`);
+    const failureReason = data.notification?.failed?.[0]?.error ? ` Delivery issue: ${data.notification.failed[0].error}` : "";
+    setMessage(`Update successful for ${selectedNumber}. Notifications sent to ${delivered} recipient${delivered === 1 ? "" : "s"}${failed ? `, with ${failed} failed delivery${failed === 1 ? "" : "ies"}.` : "."}${failureReason}`);
     await load();
   }
 
   async function remove(trackingNumber: string) {
-    await fetch(`/api/admin/parcels/${trackingNumber}`, { method: "DELETE" });
+    if (!window.confirm(`Delete shipment ${trackingNumber}? This cannot be undone.`)) {
+      return;
+    }
+    await fetch(`/api/admin/parcels/${trackingNumber}`, {
+      method: "DELETE",
+      headers: adminHeaders(),
+    });
     setMessage(`Deleted ${trackingNumber}.`);
     await load();
   }
 
   async function logout() {
     await fetch("/api/admin/auth/logout", { method: "POST" });
+    window.localStorage.removeItem(adminTokenKey);
     window.location.href = "/lex/auth";
   }
 
@@ -292,6 +317,7 @@ export function AdminDashboard() {
     setMessage("");
     const response = await fetch(`/api/admin/parcels/${trackingNumber}/pdf`, {
       credentials: "include",
+      headers: adminHeaders(),
     });
 
     if (!response.ok) {
@@ -420,6 +446,7 @@ export function AdminDashboard() {
                 >
                   <p className="font-mono text-sm font-bold">{parcel.trackingNumber}</p>
                   <p className="text-sm font-semibold text-slate-800">{parcel.currentStatus}</p>
+                  <p className="text-xs font-semibold text-slate-700">{parcel.sender.name} to {parcel.receiver.name}</p>
                   <p className="text-xs text-slate-500">{parcel.currentLocation} · {parcel.destination}</p>
                 </button>
               ))}
@@ -471,12 +498,8 @@ export function AdminDashboard() {
                   </select>
                 </label>
                 <label className="grid gap-2 text-sm font-bold text-slate-700">
-                  Public update note
-                  <textarea value={statusForm.note} onChange={(event) => updateStatusField("note", event.target.value)} placeholder="Visible on the tracking page" className="min-h-20 rounded-md border border-slate-300 px-3 py-3 text-sm font-normal" />
-                </label>
-                <label className="grid gap-2 text-sm font-bold text-slate-700">
-                  Shared operations note for sender and receiver
-                  <textarea value={statusForm.internalNote} onChange={(event) => updateStatusField("internalNote", event.target.value)} placeholder="Also visible on the tracking page and PDF" className="min-h-20 rounded-md border border-slate-300 px-3 py-3 text-sm font-normal" />
+                  Update note for sender and receiver
+                  <textarea value={statusForm.note} onChange={(event) => updateStatusField("note", event.target.value)} placeholder="This will be emailed to sender and receiver and shown on the tracking page" className="min-h-20 rounded-md border border-slate-300 px-3 py-3 text-sm font-normal" />
                 </label>
                 <button className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-slate-950 px-4 font-bold text-white" disabled={saving}>
                   <Send size={17} /> Add update and notify
@@ -489,7 +512,6 @@ export function AdminDashboard() {
                     <p className="text-sm font-bold">{status.title}</p>
                     <p className="text-xs text-slate-500">{new Date(status.date).toLocaleString()} · {status.location}</p>
                     <p className="text-sm text-slate-600">{status.note}</p>
-                    {status.internalNote ? <p className="mt-1 rounded bg-teal-50 px-2 py-1 text-xs font-semibold text-teal-800">Shared note: {status.internalNote}</p> : null}
                   </div>
                 ))}
               </div>
@@ -497,6 +519,35 @@ export function AdminDashboard() {
           ) : null}
         </aside>
       </div>
+
+      {createdModal ? (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/50 px-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-teal-700">Shipment created</p>
+            <h2 className="mt-3 text-2xl font-black text-slate-950">
+              Shipment from {createdModal.sender} to {createdModal.receiver} has been created.
+            </h2>
+            <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-sm font-semibold text-slate-600">Tracking number</p>
+              <div className="mt-2 flex items-center gap-3">
+                <p className="font-mono text-lg font-black text-slate-950">{createdModal.trackingNumber}</p>
+                <button
+                  type="button"
+                  onClick={() => void navigator.clipboard.writeText(createdModal.trackingNumber)}
+                  className="rounded-md border border-slate-300 px-3 py-2 text-sm font-bold text-slate-700"
+                >
+                  Copy
+                </button>
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end">
+              <button type="button" onClick={() => setCreatedModal(null)} className="inline-flex h-11 items-center justify-center rounded-md bg-teal-700 px-5 font-bold text-white">
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }

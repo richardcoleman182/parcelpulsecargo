@@ -136,6 +136,7 @@ export function AdminDashboard() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [createdModal, setCreatedModal] = useState<{ sender: string; receiver: string; trackingNumber: string } | null>(null);
+  const [updatedModal, setUpdatedModal] = useState<{ trackingNumber: string; status: string; location: string } | null>(null);
 
   const selectedNumber = selected?.trackingNumber;
 
@@ -292,6 +293,11 @@ export function AdminDashboard() {
     const failed = data.notification?.failed?.length || 0;
     const failureReason = data.notification?.failed?.[0]?.error ? ` Delivery issue: ${data.notification.failed[0].error}` : "";
     setMessage(`Update successful for ${selectedNumber}. Notifications sent to ${delivered} recipient${delivered === 1 ? "" : "s"}${failed ? `, with ${failed} failed delivery${failed === 1 ? "" : "ies"}.` : "."}${failureReason}`);
+    setUpdatedModal({
+      trackingNumber: data.parcel.trackingNumber,
+      status: data.parcel.currentStatus,
+      location: data.parcel.currentLocation,
+    });
     await load();
   }
 
@@ -542,6 +548,27 @@ export function AdminDashboard() {
             </div>
             <div className="mt-6 flex justify-end">
               <button type="button" onClick={() => setCreatedModal(null)} className="inline-flex h-11 items-center justify-center rounded-md bg-teal-700 px-5 font-bold text-white">
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {updatedModal ? (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/50 px-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-teal-700">Update successful</p>
+            <h2 className="mt-3 text-2xl font-black text-slate-950">
+              Shipment update has been published successfully.
+            </h2>
+            <div className="mt-5 grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700">
+              <p><span className="text-slate-500">Tracking number:</span> <span className="font-mono text-slate-950">{updatedModal.trackingNumber}</span></p>
+              <p><span className="text-slate-500">Current status:</span> <span className="text-slate-950">{updatedModal.status}</span></p>
+              <p><span className="text-slate-500">Current location:</span> <span className="text-slate-950">{updatedModal.location}</span></p>
+            </div>
+            <div className="mt-6 flex justify-end">
+              <button type="button" onClick={() => setUpdatedModal(null)} className="inline-flex h-11 items-center justify-center rounded-md bg-teal-700 px-5 font-bold text-white">
                 OK
               </button>
             </div>
